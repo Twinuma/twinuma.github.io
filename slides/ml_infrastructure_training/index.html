@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="ja">
+	<head>
+		<meta charset="utf-8">
+		<title>インフラ勉強会＠MonstarLab</title>
+		<meta name="description" content="MonstarLab Infrastructure Training">
+		<meta name="author" content="Takayuki Niinuma@monstar-lab">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/night.css" id="theme">
+		<!-- <link rel="stylesheet" href="css/theme/black.css" id="theme"> -->
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+		<div class="reveal">
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-markdown>
+					<script type="text/template">
+						##インフラ勉強会＠MonstarLab
+						### 2015/12/28
+						### Created by Takayki Niinuma
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## Who am i?
+						<span style="font-size: large;">
+						```
+						{
+							"Name": "新沼貴行",
+							"Role": "technologist",
+							"Sns": {
+								"Twitter": "@twinuma",
+								"Facebook": "https://www.facebook.com/takayuki.niinuma"
+							},
+							"Certification": "AWS Certified Solutions Architect-Associate"
+						}
+						```
+						</span>
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## Introduction
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## 昨年の実績
+						- 数十件のインフラ設計・構築依頼（未受注あり）
+						- Webアプリケーション：**7**、モバイル：**3**
+						- お客様から「AWSで！」という指定がほとんど
+							- インフラエンジニアはAWS必須
+						- 「PaaS利用で」という声もあった
+							- IaaSだけじゃなくPaaSも提案できるくらいの知識は必要
+							- 例）Heroku、IBM Bluemix、moCloud等
+						- ElasticBeanstalkを利用した鉄板構成が非常にウケる
+						- システム連携を考慮したものが増えているのでAPI化も考慮しないといけない印象
+					</script>
+				</section>
+
+				<section>
+					<h2>【最新版】EB使用した鉄板構成</h2>
+					<img style="background-color:white" width="600" height="600" data-src="http://share-myfiles.s3.amazonaws.com/eb.png" alt="Down arrow">
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- **<span style="color:#6fb98f">AWSの特徴、概念</span>**
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section>
+					<section id="fragments" style="text-align: left;">
+						<h2>AWSの特徴</h2>
+						<p>ユーザがAWSを採用する理由で代表的な理由は、</p>
+						<p class="fragment">1.豊富なサービス</p>
+						<p class="fragment">2.柔軟なリソース</p>
+					  <p class="fragment">3.従量課金</p>
+					</section>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						### AWSを支える概念①リージョン
+						AWSの各サービスが提供されている地域のこと。東京(Tokyo Region)やアメリカ東海岸(US East Region)など、2015年12月現在、世界中に11のリージョンが存在します。
+					</script>
+				</section>
+				<section data-markdown>
+					<script type="text/template">
+						### AWSを支える概念②アベイラビリティゾーン
+						独立したデータセンターに当てはまり、どのリージョンにも必ず２つ以上存在します。これは耐障害性のためのものなので、1つのアベイラビリティゾーンでシステムが稼働できるように設計されています。
+						これによってAWSの耐障害性が確保されユーザも安定したシステムを簡単に構築することができます。アベイラビリティゾーン間は高速回線で接続されている。
+					</script>
+				</section>
+				<section data-markdown>
+					<script type="text/template">
+						### AWSを支える概念③エッジロケーション
+						コンテンツ配信サービスのCloudFrontやDNSサービスのRoute53を提供する場所のこと。2015年12月現在、世界中で53のエッジロケーションが存在しています。
+					</script>
+				</section>
+
+				<section>
+					<img style="background-color:white" width="700" height="400" data-src="http://share-myfiles.s3.amazonaws.com/aws%E3%82%B3%E3%83%B3%E3%83%9B%E3%82%9A%E3%83%BC%E3%83%8D%E3%83%B3%E3%83%88.png" alt="Down arrow">
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- **<span style="color:#6fb98f">弊社事例にみるAWS構成例</span>**
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section>
+					<h2>某女性旅向けアプリ</h2>
+					<img style="background-color:white" width="600" height="500" data-src="http://share-myfiles.s3.amazonaws.com/vivo.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h2>某ゲーム案件</h2>
+					<img style="background-color:white" width="600" height="500" data-src="http://share-myfiles.s3.amazonaws.com/RGS案件構成案.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h2>某アート系Webサイト</h2>
+					<img style="background-color:white" width="600" height="500" data-src="http://share-myfiles.s3.amazonaws.com/terada.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h2>某ECサイト案件</h2>
+					<img style="background-color:white" width="600" height="500" data-src="http://share-myfiles.s3.amazonaws.com/構成例_2.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h2>典型的な3層Webシステム構成・ネットワーク設定</h2>
+				</section>
+
+				<section>
+					<img style="background-color:white" width="800" height="600" data-src="http://share-myfiles.s3.amazonaws.com/aws_risou.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>2つ以上のAZを持つAWSのリージョン</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_1.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>2つAZを跨いだVPCの作成</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_2.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>複数のサブネットでVPC内をセグメント化</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_3.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>EC2やAWSサービスの配置</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_4.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>ルーティングによるセグメント化</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_5.png" alt="Down arrow">
+				</section>
+
+				<section>
+					<h3>セキュリティグループでサーバを保護</h3>
+					<img style="background-color:white" data-src="http://share-myfiles.s3.amazonaws.com/vpc_6.png" alt="Down arrow">
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- **<span style="color:#6fb98f">高可用性・耐障害性</span>**
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						### 故障に備えて設計すれば何も故障しない
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 高可用性の実現
+						- 複数のアベイラビリティーゾーンおよびリージョンを使用
+						- AutoScalingを使用
+						- 可用性の高いサービスを利用
+							- Multi-AZ Amazon RDS
+							- Amazon DynamoDB
+							- Amazon Simple Storage Service(S3)
+							- Amazon Simple Queue Service(SQS)
+							- Elastic Load Balancing
+							- Amazon Route53
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 耐障害性の実現
+						- 可用性の高いサービスを利用して十分なキャパシティーをプロビジョニングし、コンポーネントが故障してもSLAを満たすコンピューティング能力が確保できるようにする
+						- 耐障害性の高いサービスを利用
+							- Amazon DynamoDB
+							- Amazon Route53
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- **<span style="color:#6fb98f">スケーラブルなアーキテクチャ</span>**
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 疎結合で柔軟に
+						- 互いに独立したコンポーネントを使用してアーキテクチャを設計する
+							- 結合が「疎」であればあるほど、スケーリングの規模が広がる
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 疎結合を実装するためのパターン
+						- 個々のリソースに固有の情報に依存しない
+							- 負荷分散されるクラスター
+							- IPアドレスではなくDNSマッピング
+							- マッピングおよび再マッピング可能なIPアドレス
+						- 他のコンポーネントの健全性を前提にしない
+							- メソッド呼び出しの代わりに非同期メッセージを送信
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 伸縮自在性を実装
+						- コンポーネントが常に健全で、利用可能であり、同じ場所にあるとは想定しない
+							- AutoScaling、ElasticIP、エンドポイントを使用
+						- 柔軟に再起動できる設計
+							- ステートレスはステートフルに勝る
+							- Elastic Load Balancing とCloudWatchを使用して、インスタンスの健全性を調べる
+						- インスタンスをブートストラップ
+							- 起動時にユーザデータを送信して、インスタンスの役割・振る舞いを設定
+						- 可能であれば構成やカスタマイズ設定をインスタンス以外の場所に保存
+							- セッションデータにAmazon DynamoDBを使用する
+						- 伸縮自在性は、多くの場合コスト削減につながる
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- **<span style="color:#6fb98f">データセキュリティ</span>**
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### レイヤーごとのセキュリティ構築
+						- インフラストラクチャレイヤー
+						- コンピューティング／ネットワークアーキテクチャレイヤー
+						- データレイヤー
+						- アプリケーションレイヤー
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### インフラストラクチャレイヤー
+						- 責任分担モデル
+						- AWSリソースの保護
+							- 最小権限の原則
+							- アイデンティティ
+					</script>
+				</section>
+
+				<section>
+					<h2>責任分担モデル</h2>
+					<table>
+						<thead>
+							<tr>
+								<th>AWS側</th>
+								<th>ユーザ側</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>・設備</td>
+								<td>・オペレーティングシステム</td>
+							</tr>
+							<tr>
+								<td>・物理的セキュリティ</td>
+								<td>・アプリケーション</td>
+							</tr>
+							<tr>
+								<td>・物理的インフラストラクチャ</td>
+								<td>・セキュリティグループ</td>
+							</tr>
+							<tr>
+								<td>・ネットワークインフラストラクチャ</td>
+								<td>・OSファイヤウォール</td>
+							</tr>
+							<tr>
+								<td>・仮想化インフラストラクチャ</td>
+								<td>・ネットワーク構成</td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>・アカウント管理</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 最小権限の原則
+						- 各ユーザまたはプロセスには、実行する必要があるアクティビティはすべて実行し、それ以外のアクティビティは実行しないという権限を持つべき
+							- アイデンティティで示されるユーザまたはプロセス
+							- AWS APIにアクセスできるアイデンティティは３種類
+								- ルートアカウント
+								- IAMユーザ
+								- Security Token Service(STS)／フェデレーション
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### ルートアカウント
+						- アカウント全体に対する権限
+						- 制限できない
+						- 多要素認証（MFA）の追加
+							- このアカウントは最小権限の原則に制限できないため、ベストプラクティスは出来る限りこのアカウントをユーザアイデンティティに使わないこと
+							<blockquote cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
+								&ldquo;ルート使いまわしているプロジェクトはありませんか？今すぐやめましょう。&rdquo;
+							</blockquote>
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### IAMアカウント
+						- グループやポリシーを使用したきめ細かなアクセスコントロール
+						- AWSコンソール/CLI/APIのアクセスコントロール
+						- アプリケーション認証ではない
+						- オンプレミスのユーザディレクトリからは独立している
+						- 最小権限の原則に適した完全なコントロールが可能
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### Security Token Service(STS)／フェデレーション
+						- 一時的なトークン
+							- ユーザまたはプロセスに一時的に権限を付与
+							- 付与された権限に対する完全なコントロール
+							- 権限の持続期間に対する完全なコントロール
+						- ロール
+							- EC2インスタンスでのプロセスにSTSを介して権限を付与
+							- インスタンスにキーは保存されない
+						- フェデレーション
+							- ADアカウントに基づいて割り当てられる一時的なトークン
+							- 個人のIAMアカウントは不要。オンプレミスのユーザディレクトリを利用する
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### コンピューティング／ネットワークアーキテクチャレイヤー
+						- Amazon Virtual Private Cloud
+							- クラウドでネットワークアーキテクチャを設計する
+								- セキュリティ
+								- ルーティング
+								- ネットワークの隔離
+								- 管理
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### Amazon Virtual Private Cloud
+						- 構成要素：サブネット
+						- セキュリティ：セキュリティグループ/アクセスコントロールリスト
+						- ネットワークの隔離：インターネットゲートウェイ/仮想プライベートゲートウェイ
+						- トラフィックの方向：ルート
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### サブネット
+						- インスタンスを運用ユニットまたは管理ユニットごとに整理する
+							- 異なるプロジェクト
+							- 異なる環境
+							- 異なるアプリケーション層
+					</script>
+				</section>
+
+				<section>
+					<h2>セキュリティグループ、アクセスコントロールリスト</h2>
+					<table>
+						<thead>
+							<tr>
+								<th>セキュリティグループ</th>
+								<th>アクセスコントロールリスト</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>・ポート、プロトコル、ソースIPの指定</td>
+								<td>・ポート、プロトコル、ソースIPの指定</td>
+							</tr>
+							<tr>
+								<td>・明示的な許可のみ</td>
+								<td>・明示的な許可または拒否</td>
+							</tr>
+							<tr>
+								<td>・ステートフル</td>
+								<td>・ステートレス</td>
+							</tr>
+							<tr>
+								<td>・インスタンスに適応</td>
+								<td>・サブネットに適応</td>
+							</tr>
+							<tr>
+								<td>・シングルVPCに関連付け</td>
+								<td>・シングルVPCに関連付け</td>
+							</tr>
+							<tr>
+								<td>・Amazon VPCとAmazon EC2 Classic</td>
+								<td>・Amazon VPCのみ</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### インターネットゲートウェイ、仮想プライベートゲートウェイ、Direct Connect
+						- VPCにトラフィックを出し入れするサービス
+						- それぞれのユースケース
+							- インターネットゲートウェイ：インターネットに接続
+							- 仮想プライベートゲートウェイ：VPNに接続
+							- DirectConnect：専用線
+							- VPCピアリング：他のVPCに接続
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### ルート
+						- サブネットと関連付けられる
+						- IP範囲の宛先を定義
+							- ローカルルールはデフォルトで定義される
+							- インターネットに入るためのインターネットゲートウェイへのルート
+							- オンプレミスネットワークに入るための仮想プライベートゲートウェイのルート
+							- ピアリングされたVPCに入るためのピアリング接続へのルート
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### データレイヤーの保護
+						- 送信中のデータ
+							- AWSの入口と出口
+							- AWS内部
+						- 保管時のデータ
+							- Amazon S3
+							- Amazon EBS
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 送信中のデータ
+						- AWSインフラへのデータ送信と、AWSインフラからのデータ送信
+							- Web経由のSSL
+							- IPSec用のVPN
+							- 直接接続
+							- Import/Export
+						- AWS APIに送信されるデータ
+							- AWS APIコールはすべて、HTTPS RESTにて呼び出す
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### Amazon S3に保管中のデータ①
+						- アクセス
+							- IAMポリシー
+							- バケットポリシー
+							- アクセスコントロールリスト
+							- 一時認証情報
+								- 署名済みURLに使用
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### Amazon S3に保管中のデータ②
+						- 暗号化
+							- サーバ側（AWSが管理するキー）
+							- サーバ側（ユーザが管理するキー）
+							- クライアント側
+								- クライアントコードの暗号化/復号化
+								- キーはAmazon S3とは別にユーザが管理する
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### Amazon EBSに保管中のデータ
+						- 暗号化されたAmazon EBSボリューム（AWSが管理するキー）
+						- Amazon EBSボリュームにある暗号化されたファイルシステム
+						- アプリケーションレベルにある暗号化されたデータ
+							- クライアント側にあるアプリケーションの暗号化/復号化データ
+							- ユーザが管理するキー
+							- クライアント側
+							- サードパーティの支援
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### アプリケーションレイヤーの保護
+						- 共有セキュリティモデル（ユーザ自身が対応する部分）
+						- 各種のアイデンティティ
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### 各種のアイデンティティ
+						- AWS Identity and Access Management(IAM)
+						- オペレーティングシステム/AD/LDAPアカウント
+						- アプリケーションアカウント
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### アプリケーションの保護-オンプレミスと同様
+						- アイデンティティメカニズムを選択
+						- 安全なパスワードポリシーを使用する
+						- OSを保護する
+						- 堅牢なローレベルアクセスコントロールを使用する
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- **<span style="color:#6fb98f">provisioning、orchestration</span>**
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- 参考文献
+					</script>
+				</section>
+
+				<section>
+					<h2>provisioning tool</h2>
+					<blockquote cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
+						&ldquo;ネットワークやコンピュータの設備を，必要になったときすぐに利用できるよう準備しておくことを指す よって、プロビジョニングツールはそれらをいい感じにやるためのツール。&rdquo;
+					</blockquote>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### provisioning
+						- Puppet
+						- Chef
+						- Ansible <= アート系Webサイトで採用。グッチさんがノウハウ持ってます。
+						- Itamae
+						- AWS OpsWorks
+					</script>
+				</section>
+
+				<section>
+					<h2>orchestration tool</h2>
+					<blockquote cite="http://searchservervirtualization.techtarget.com/definition/Our-Favorite-Technology-Quotations">
+						&ldquo;複数の仮想マシンや仮想ネットワーク、仮想ストレージ等から構成されるシステムの基盤全体を、設定含めて整合した状態で一挙に構築することができるツール&rdquo;
+					</blockquote>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### orchestration
+						- Terraform <= アート系Webサイトで採用
+						- Serf
+						- OpenStack
+						- AWS CloudFormation
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						### アート系Webサイトを支える技術
+						- packer（AMI作成支援。ゴールデンイメージ作成）
+						- serverspec（必要なミドルウェアインストールや設定のテスト）
+						- terraform（AWS環境構築）
+						- awspec（AWSリソース構成テスト）
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- **<span style="color:#6fb98f">クラウドネイティブ時代のAWSアーキテクチャ</span>**
+						- 参考文献
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## クラウドネイティブとは
+						- クラウドで提供されるサービス利用を前提に構築するシステムおよびアプリケーション
+						- 仮想サーバ上で1からすべてを作りこむのではなく効率的にアプリケーションを実装
+						- ビジネスの差別化に集中
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## 従来のWebアーキテクチャ
+						![従来のWebアーキテクチャ](http://share-myfiles.s3.amazonaws.com/aws_web.png)
+
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## サーバレスアーキテクチャ
+						![サーバレスアーキテクチャ](http://share-myfiles.s3.amazonaws.com/aws_less1.png)
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## サーバレスアーキテクチャ
+						### 2-Tier Architecture
+						![2-Tier Architecture](http://share-myfiles.s3.amazonaws.com/aws_less2.png)
+					</script>
+				</section>
+
+				<section data-markdown>
+					<script type="text/template">
+						## 解決される課題
+						![2-Tier Architecture](http://share-myfiles.s3.amazonaws.com/serverless.png)
+					</script>
+				</section>
+
+				<section>
+					<h3>Framework</h3>
+					<p><a href="https://github.com/serverless/serverless">serverless</a></p>
+					<img width="600" height="400" data-src="http://share-myfiles.s3.amazonaws.com/serverless_framework.jpeg" alt="Down arrow">
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## Agenda
+						- AWSの特徴、概念
+						- 弊社事例にみるAWS構成例
+						- 高可用性・耐障害性
+						- スケーラブルなアーキテクチャ
+						- データセキュリティ
+						- provisioning、orchestration
+						- クラウドネイティブ時代のAWSアーキテクチャ
+						- **<span style="color:#6fb98f">参考文献</span>**
+					</script>
+				</section>
+
+				<section data-markdown style="text-align: left;">
+					<script type="text/template">
+						## 参考文献
+						- [クラウド向けのアーキテクチャ: ベストプラクティス](http://media.amazonwebservices.com/jp/wp/AWS_WP_Cloud_BestPractices_JP_v20110531-3.pdf)
+						- [AmazonVPCでITインフラストラクチャを拡張](http://media.amazonwebservices.com/jp/wp/Extend_your_IT_infrastructure_with_Amazon_VPC.pdf)
+						- [AWSクラウドのストレージオプション](http://media.amazonwebservices.com/jp/wp/AWS_Storage_Options_01052011.pdf)
+						- [AWSセキュリティのベストプラクティス](https://d0.awsstatic.com/International/ja_JP/Whitepapers/AWS_Security_Best_Practices.pdf)
+						- [セキュリティプロセスの概要](https://d0.awsstatic.com/International/ja_JP/Whitepapers/AWS%20Security%20Whitepaper.pdf)
+						- [Serverless Architecture on AWS（20151023版）](http://www.slideshare.net/keisuke69/serverless-architecture-on-aws)
+					</script>
+				</section>
+
+				<section>
+					<h3>Question?</h3>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+				slideNumber: true,
+				overview: false,
+				touch: false,
+				loop: true,
+				mouseWheel: true,
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+				parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				parallaxBackgroundSize: '2100px 1024x',
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
